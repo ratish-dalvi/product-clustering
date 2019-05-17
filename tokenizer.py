@@ -4,6 +4,9 @@ import numpy as np
 import pandas as pd
 
 regex_alpha_numeric_only = re.compile(r'[^a-zA-Z0-9\s]+', re.UNICODE)
+regex_alpha_numeric_only_no_space = re.compile(r'[^a-zA-Z0-9]+', re.UNICODE)
+
+regex_numeric = re.compile(r'[0-9]+', re.UNICODE)
 
 
 def remove_punctuation(x: str, replacement: str) -> str:
@@ -14,7 +17,8 @@ def remove_punctuation(x: str, replacement: str) -> str:
     return regex_alpha_numeric_only.sub(replacement, x)
 
 
-def tokenize_text(txt: str, prefix: str = None, punctuation_replacement: str = None) -> list:
+def tokenize_text(txt: str, prefix: str = None, punctuation_replacement: str = None,
+                  remove_numbers=False) -> list:
     """ Tokenize a scalar into a list of tokens
 
     :param x: scalar to tokenize
@@ -28,6 +32,9 @@ def tokenize_text(txt: str, prefix: str = None, punctuation_replacement: str = N
     txt = str(txt).lower()
     if punctuation_replacement is not None:
         txt = remove_punctuation(txt, punctuation_replacement)
+
+    if remove_numbers:
+        txt = regex_numeric.sub(' ', txt)
 
     tokens = txt.split()
     clean_tokens = [x for x in tokens if not is_null(x)]
@@ -43,26 +50,80 @@ def is_null(x: str) -> bool:
     :param x: scalar
     :return: boolean, indicating whether the token is null or not
     """
-    return pd.isnull(x) or (x.strip() == '')
+    return pd.isnull(x) or (x.strip() == '') or len(x) <= 2
 
 
 # Regexes for product ID in the decreaseing order of priority
 product_regexes = [
-    re.compile(r'\b[a-zA-Z]{1,2}[\s]?[-]?[\s]?[0-9]{2,4}\b', re.UNICODE),
-    re.compile(r'\b[0-9]{3,5}\b', re.UNICODE)
+    re.compile(r'\b'
+               r'[a-zA-Z]{1,3}'
+               r'[\s]?[-]?[\s]?'
+               r'[0-9]{1,5}'
+               r'[\s]?[-]?[\s]?'
+               r'[a-zA-Z]{0,2}'
+               r'\b', re.UNICODE),
+
+    re.compile(r'\s'
+               r'[0-9]{2,5}'
+               r'[-]?'
+               r'[a-zA-Z]{0,3}'
+               r'\s', re.UNICODE),
+
+    re.compile(r'\b'                        # Similar to the first one, but allows for longer words
+               r'[a-zA-Z]{4,5}'
+               r'[\s]?-[\s]?'
+               r'[0-9]{1,5}'
+               r'\b', re.UNICODE),
+    ]
+product_FP_regexes = [
+    re.compile(r'[0-9]+KG[S]?', re.UNICODE),  # eg. 300 KG
+    re.compile(r'QTY[0-9]+', re.UNICODE),  # eg. QTY 344
+    re.compile(r'[0-9]+LT', re.UNICODE),  # eg. 2 LT
+    re.compile(r'^20[12][0-9]$', re.UNICODE),  # eg. year 2019, 2018 etc
+    re.compile(r'^X[0-9]+$', re.UNICODE)  # eg. 30 X 400
 ]
 
 
 def id_cleanup(x):
-    return x.replace(" ", "").replace("-", "").upper()
+    # return x.replace(" ", "").replace("-", "").upper()
+    return regex_alpha_numeric_only_no_space.sub('', x)
+
+
+def is_false_positive(x):
+    if len(x) <= 2:
+        return True
+    for reg in product_FP_regexes:
+        if reg.search(x):
+            return True
+    return False
+
+
+def duplicate_match(new_match, current_matches):
+    for x in current_matches:
+        if new_match in x and new_match != x:
+            return True
 
 
 def product_id_parser(x):
+    all_matches = []
     for reg in product_regexes:
-        matches = reg.findall(x)
-        standardised_matches = set([id_cleanup(match) for match in matches])
-        unique_matches = set(standardised_matches)
-        if len(unique_matches) > 0:
-            return pd.Series({'product_id': unique_matches,
-                              'num_matched': len(unique_matches)})
-    return pd.Series({'num_matched': 0})
+        matches = reg.finditer(x)
+        matches = [(match.group(), match.span()) for match in matches]
+        standardised_matches = [(id_cleanup(match), span) for (match, span) in matches]
+        all_matches.extend(standardised_matches)
+
+    lst_all_matches = [match for (match, span) in all_matches]
+
+    final_matches = [
+        (match, span) for (match, span) in all_matches
+        if not (is_false_positive(match) or duplicate_match(match, lst_all_matches))
+        ]
+    # Pick the best match. Span is a tuple, so we need the start
+    if final_matches:
+        best_match = [sorted(final_matches, key=lambda x: x[1][0])[0][0]]
+    else:
+        best_match = []
+
+    return pd.Series({'detected_product_ids': final_matches,
+                      'best_match_product_id': best_match,
+                      'num_matched': len(final_matches)})
