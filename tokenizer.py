@@ -9,6 +9,38 @@ regex_alpha_numeric_only_no_space = re.compile(r'[^a-zA-Z0-9]+', re.UNICODE)
 regex_numeric = re.compile(r'[0-9]+', re.UNICODE)
 
 
+# Regexes for product ID in the decreasing order of priority
+product_regexes = [
+    re.compile(r'\b'
+               r'[a-zA-Z]{1,3}'
+               r'[\s]?[-]?[\s]?'
+               r'[0-9]{1,5}'
+               r'[\s]?[-]?[\s]?'
+               r'[a-zA-Z]{0,2}'
+               r'\b', re.UNICODE),
+
+    re.compile(r'\s'
+               r'[0-9]{2,5}'
+               r'[-]?'
+               r'[a-zA-Z]{0,3}'
+               r'\s', re.UNICODE),
+
+    re.compile(r'\b'                        # Similar to the first one, but allows for longer words
+               r'[a-zA-Z]{4,5}'
+               r'[\s]?-[\s]?'
+               r'[0-9]{1,5}'
+               r'\b', re.UNICODE),
+    ]
+
+irrelevant_numbers_regexes = [
+    re.compile(r'[0-9]+[\s]?X[\s]?[0-9]+[\s]?(KGS)?(KG)?(LT)?(G)?', re.UNICODE),  # eg. 30 X 400
+    re.compile(r'[0-9]+[\s]?KG[S]?', re.UNICODE),  # eg. 300 KG
+    re.compile(r'QTY[\s]?[0-9]+', re.UNICODE),  # eg. QTY 344
+    re.compile(r'[0-9]+LT', re.UNICODE),  # eg. 2 LT
+    re.compile(r'^20[12][0-9]$', re.UNICODE),  # eg. year 2019, 2018 etc
+]
+
+
 def remove_punctuation(x: str, replacement: str) -> str:
     """ Replace/remove punctuation from text
     :param replacement: character to replace the punctuation by
@@ -57,38 +89,6 @@ def is_null(x: str) -> bool:
     :return: boolean, indicating whether the token is null or not
     """
     return pd.isnull(x) or (x.strip() == '') or len(x) <= 2
-
-
-# Regexes for product ID in the decreaseing order of priority
-product_regexes = [
-    re.compile(r'\b'
-               r'[a-zA-Z]{1,3}'
-               r'[\s]?[-]?[\s]?'
-               r'[0-9]{1,5}'
-               r'[\s]?[-]?[\s]?'
-               r'[a-zA-Z]{0,2}'
-               r'\b', re.UNICODE),
-
-    re.compile(r'\s'
-               r'[0-9]{2,5}'
-               r'[-]?'
-               r'[a-zA-Z]{0,3}'
-               r'\s', re.UNICODE),
-
-    re.compile(r'\b'                        # Similar to the first one, but allows for longer words
-               r'[a-zA-Z]{4,5}'
-               r'[\s]?-[\s]?'
-               r'[0-9]{1,5}'
-               r'\b', re.UNICODE),
-    ]
-
-irrelevant_numbers_regexes = [
-    re.compile(r'[0-9]+[\s]?X[\s]?[0-9]+[\s]?(KGS)?(KG)?(LT)?(G)?', re.UNICODE),  # eg. 30 X 400
-    re.compile(r'[0-9]+[\s]?KG[S]?', re.UNICODE),  # eg. 300 KG
-    re.compile(r'QTY[\s]?[0-9]+', re.UNICODE),  # eg. QTY 344
-    re.compile(r'[0-9]+LT', re.UNICODE),  # eg. 2 LT
-    re.compile(r'^20[12][0-9]$', re.UNICODE),  # eg. year 2019, 2018 etc
-]
 
 
 def id_cleanup(x):
