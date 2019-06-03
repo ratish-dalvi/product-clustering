@@ -5,7 +5,6 @@ import pandas as pd
 
 regex_alpha_numeric_only = re.compile(r'[^a-zA-Z0-9\s]+', re.UNICODE)
 regex_alpha_numeric_only_no_space = re.compile(r'[^a-zA-Z0-9]+', re.UNICODE)
-
 regex_numeric = re.compile(r'[0-9]+', re.UNICODE)
 
 
