@@ -44,6 +44,12 @@ def tokenize_text(txt: str, prefix: str = None, punctuation_replacement: str = N
     return clean_tokens
 
 
+def remove_irrelevant_numbers(txt):
+    for reg_tmp in irrelevant_numbers_regexes:
+        txt = reg_tmp.sub(' ', txt)
+    return txt
+
+
 def is_null(x: str) -> bool:
     """ Check if x is null
 
@@ -75,12 +81,13 @@ product_regexes = [
                r'[0-9]{1,5}'
                r'\b', re.UNICODE),
     ]
-product_FP_regexes = [
-    re.compile(r'[0-9]+KG[S]?', re.UNICODE),  # eg. 300 KG
-    re.compile(r'QTY[0-9]+', re.UNICODE),  # eg. QTY 344
+
+irrelevant_numbers_regexes = [
+    re.compile(r'[0-9]+[\s]?X[\s]?[0-9]+[\s]?(KGS)?(KG)?(LT)?(G)?', re.UNICODE),  # eg. 30 X 400
+    re.compile(r'[0-9]+[\s]?KG[S]?', re.UNICODE),  # eg. 300 KG
+    re.compile(r'QTY[\s]?[0-9]+', re.UNICODE),  # eg. QTY 344
     re.compile(r'[0-9]+LT', re.UNICODE),  # eg. 2 LT
     re.compile(r'^20[12][0-9]$', re.UNICODE),  # eg. year 2019, 2018 etc
-    re.compile(r'^X[0-9]+$', re.UNICODE)  # eg. 30 X 400
 ]
 
 
@@ -92,9 +99,6 @@ def id_cleanup(x):
 def is_false_positive(x):
     if len(x) <= 2:
         return True
-    for reg in product_FP_regexes:
-        if reg.search(x):
-            return True
     return False
 
 
@@ -105,6 +109,7 @@ def duplicate_match(new_match, current_matches):
 
 
 def product_id_parser(x):
+    x = remove_irrelevant_numbers(x)
     all_matches = []
     for reg in product_regexes:
         matches = reg.finditer(x)
@@ -118,7 +123,8 @@ def product_id_parser(x):
         (match, span) for (match, span) in all_matches
         if not (is_false_positive(match) or duplicate_match(match, lst_all_matches))
         ]
-    # Pick the best match. Span is a tuple, so we need the start
+
+    # Pick the best match. Span is a tuple, so we pick the first one
     if final_matches:
         best_match = [sorted(final_matches, key=lambda x: x[1][0])[0][0]]
     else:
