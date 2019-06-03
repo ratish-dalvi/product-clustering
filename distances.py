@@ -22,20 +22,6 @@ def create_distance_matrix(tokenized_texts, filter_extremes=False):
     return distance_matrix
 
 
-def get_product_indicator_function(product_ids):
-    """ Matrix identifying whether a product ID was present in either
-    of the pair.
-    """
-    prod_ids_found = product_ids.apply(len) > 0
-    n = len(product_ids)
-    I = np.ones((n, n))
-    empty_indices = prod_ids_found[~prod_ids_found]
-    for i in empty_indices:
-        for j in empty_indices:
-            I[i, j] = 0
-    return I
-
-
 def pprint(X1, X2, I, i, j):
     print("(%d, %d): DM1: %.3f, DM2: %.3f I: %d" %
           (i, j, X1[i, j], X2[i, j], I[i, j]))
