@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from tokenizer import tokenize_text, product_id_parser
-from distances import create_distance_matrix, get_product_indicator_function, pprint, clustering
+from core import create_distance_matrix, clustering
 
 # EDIT
 
