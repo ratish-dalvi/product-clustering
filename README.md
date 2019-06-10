@@ -1,4 +1,4 @@
-# product_clustering
+# Product Clustering
 
 ## Installation
 
