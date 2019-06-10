@@ -7,9 +7,9 @@ from core import create_distance_matrix, clustering
 
 
 @click.command()
-@click.option("--input-filepath", "-i", type=str, required=True, help="Path of the input file")
-@click.option("--output-filepath", "-o", type=str, required=True,  help="Path of the output file")
-@click.option("--importer-colname", "-im", type=str, required=True, help="Name of the importer")
+@click.option("--input-filepath", "-i", type=str, required=True, help="Absolute path of the input file")
+@click.option("--output-filepath", "-o", type=str, required=True,  help="Absolute path of the output file")
+@click.option("--importer-colname", "-im", type=str, required=True, help="Column name of the importer")
 @click.option("--product-description-colname", "-p", type=str, required=True, default=None,
               help="Column name containing product descriptions")
 def run(input_filepath, output_filepath, product_description_colname, importer_colname):
