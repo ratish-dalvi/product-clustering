@@ -1,20 +1,31 @@
 # Product Clustering
 
 
-## Run using Docker 
+## Run on remote machine
 
-## Install docker
+I'm assuming at this point you have access to remote machine. Let's say it has an alias `foo`
 
-``` 
-https://docs.docker.com/docker-for-windows/install/
+Copy the input file containing your product info into the remote machine
+```
+scp your-local-path/input.csv foo:/home/ubuntu/product-clustering/build/
 ```
 
-## Download docker container
-
-``` 
-https://docs.docker.com/docker-for-windows/install/
+ssh into the machine.
+```
+ssh foo
 ```
 
+Run clustering
+```
+docker run -v ~/product-clustering/build:/build -it product_clustering python run.py --input-filepath=/build/input.csv --output-filepath=/build/output.csv  --importer-colname=INDIAN_IMPORTER_NAME  --product-description-colname=PRODUCT_DESCRIPTION
+```
+
+Copy the output to your local machine.
+Run this command on your local machine
+
+```
+scp foo:/home/ubuntu/product-clustering/build/output.csv your-local-path/
+```
 
 ## Development Mode
 
